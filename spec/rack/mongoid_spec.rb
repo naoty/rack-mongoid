@@ -1,4 +1,5 @@
 require "spec_helper"
+require "rack/contrib"
 
 describe Rack::Mongoid do
   include Rack::Test::Methods
@@ -9,7 +10,10 @@ describe Rack::Mongoid do
   end
 
   let(:app) do
-    described_class.new
+    Rack::Builder.app do
+      use Rack::PostBodyContentTypeParser
+      run Rack::Mongoid
+    end
   end
 
   let(:params) do
@@ -17,7 +21,12 @@ describe Rack::Mongoid do
   end
 
   let(:env) do
-    {}
+    case method
+    when "POST", "PATCH"
+      { "Content-Type" => "application/json" }
+    else
+      {}
+    end
   end
 
   let(:response) do
@@ -37,21 +46,12 @@ describe Rack::Mongoid do
   end
 
   let(:resource) do
-    post "/#{resource_name}", { name: "test" }.to_json, env
+    post "/#{resource_name}", { name: "test" }, env
     JSON.parse(last_response.body)
   end
 
-  let(:request_body) do
-    case method
-    when "POST", "PATCH"
-      params.to_json
-    else
-      params
-    end
-  end
-
   subject do
-    send method.downcase, path, request_body, env
+    send method.downcase, path, params, env
     response.status
   end
 

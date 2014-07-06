@@ -53,14 +53,7 @@ module Rack
         end
 
         def params
-          case
-          when request.request_method == "GET"
-            request.GET
-          when !request_body.empty?
-            JSON.parse(request_body)
-          else
-            {}
-          end
+          request.get? ? request.GET : request.POST
         end
 
         def request_body
